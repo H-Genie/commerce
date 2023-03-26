@@ -13,7 +13,7 @@ async function updateProduct(id: number, contents: string) {
         contents,
       },
     })
-    console.log(response)
+    // console.log(response)
     return response
   } catch (err) {
     console.error(err)

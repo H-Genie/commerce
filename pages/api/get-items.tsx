@@ -18,7 +18,7 @@ async function getItems() {
         },
       ],
     })
-    console.log(response)
+    // console.log(response)
     return response
   } catch (err) {
     console.error(JSON.stringify(err))

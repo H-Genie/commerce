@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { products } from '@prisma/client'
 import Image from 'next/image'
+import { TAKE } from '@/constants/products'
 
-const TAKE = 9
 export default function Products() {
   const [skip, setSkip] = useState(0)
   const [products, setProducts] = useState<products[]>([])
