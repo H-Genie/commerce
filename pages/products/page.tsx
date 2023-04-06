@@ -5,9 +5,11 @@ import { Pagination, Input } from '@mantine/core'
 import { TAKE, CATEGORY_MAP, FILTERS } from '@/constants/products'
 import { SegmentedControl, Select } from '@mantine/core'
 import { IconSearch } from '@tabler/icons-react'
+import useDebounce from '@/hooks/useDebounce'
+import { useQuery } from '@tanstack/react-query'
 
 export default function Products() {
-  const [products, setProducts] = useState<products[]>([])
+  // const [products, setProducts] = useState<products[]>([])
   const [total, setTotal] = useState(0)
   const [activePage, setPage] = useState(1)
   const [categories, setCategories] = useState<categories[]>([])
@@ -16,6 +18,7 @@ export default function Products() {
     FILTERS[0].value
   )
   const [keyword, setKeyword] = useState('')
+  const debouncedKeyword = useDebounce<string>(keyword)
 
   const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) =>
     setKeyword(e.target.value)
@@ -30,21 +33,41 @@ export default function Products() {
   // Counts
   useEffect(() => {
     fetch(
-      `/api/get-products-count?category=${selectedCategory}&contains=${keyword}`
+      `/api/get-products-count?category=${selectedCategory}&contains=${debouncedKeyword}`
     )
       .then((res) => res.json())
       .then((data) => setTotal(Math.ceil(data.items / TAKE)))
-  }, [selectedCategory, keyword])
+  }, [selectedCategory, debouncedKeyword])
 
   // Filtering
-  useEffect(() => {
-    const skip = TAKE * (activePage - 1)
-    fetch(
-      `/api/get-products?skip=${skip}&take=${TAKE}&category=${selectedCategory}&orderBy=${selectedFilter}&contains=${keyword}`
-    )
-      .then((res) => res.json())
-      .then((data) => setProducts(data.items))
-  }, [activePage, selectedCategory, selectedFilter, keyword])
+  // useEffect(() => {
+  //   const skip = TAKE * (activePage - 1)
+  //   fetch(
+  //     `/api/get-products?skip=${skip}&take=${TAKE}&category=${selectedCategory}&orderBy=${selectedFilter}&contains=${debouncedKeyword}`
+  //   )
+  //     .then((res) => res.json())
+  //     .then((data) => setProducts(data.items))
+  // }, [activePage, selectedCategory, selectedFilter, debouncedKeyword])
+  const { data: products } = useQuery<
+    { items: products[] },
+    unknown,
+    products[]
+  >(
+    [
+      `/api/get-products?skip=${
+        TAKE * (activePage - 1)
+      }&take=${TAKE}&category=${selectedCategory}&orderBy=${selectedFilter}&contains=${debouncedKeyword}`,
+    ],
+    () =>
+      fetch(
+        `/api/get-products?skip=${
+          TAKE * (activePage - 1)
+        }&take=${TAKE}&category=${selectedCategory}&orderBy=${selectedFilter}&contains=${debouncedKeyword}`
+      ).then((res) => res.json()),
+    {
+      select: (data) => data.items,
+    }
+  )
 
   return (
     <div className="px-36 mt-36 mb-36">
@@ -91,6 +114,7 @@ export default function Products() {
                 height={200}
                 placeholder="blur"
                 blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+                style={{ objectFit: 'cover' }}
               />
               <div className="flex">
                 <span>{item.name}</span>
