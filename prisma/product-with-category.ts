@@ -480,6 +480,23 @@ const productData: Prisma.productsCreateInput[] = [
 ]
 
 async function main() {
+  const categoires = ['Sneakers', 'T-Shirt', 'Pants', 'Cap', 'Hoodie']
+
+  categoires.forEach(async (c, i) => {
+    const product = await prisma.categories.upsert({
+      where: {
+        id: i + 1,
+      },
+      update: {
+        name: c,
+      },
+      create: {
+        name: c,
+      },
+    })
+    console.log(`Upsert category : ${product.id}`)
+  })
+
   await prisma.products.deleteMany({})
 
   for (const p of productData) {
