@@ -17,11 +17,11 @@ const Home: NextPage = () => {
   //     .then((res) => res.json())
   //     .then((data) => setProduct(data.items))
   // }, [])
-  useEffect(() => {
-    fetch('/api/get-products')
-      .then((res) => res.json())
-      .then((data) => setProduct(data.items))
-  }, [])
+  // useEffect(() => {
+  //   fetch('/api/get-products')
+  //     .then((res) => res.json())
+  //     .then((data) => setProduct(data.items))
+  // }, [])
 
   const handleClick = () => {
     if (inputRef.current === null || inputRef.current === '') {
