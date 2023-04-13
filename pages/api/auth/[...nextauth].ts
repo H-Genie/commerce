@@ -20,6 +20,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     session: async ({ session, user }) => {
+      // @ts-ignore
       session.id = user.id
       return Promise.resolve(session)
     },

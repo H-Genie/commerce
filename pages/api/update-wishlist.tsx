@@ -35,7 +35,7 @@ async function updateWishlist(userId: string, productId: string) {
         productIds: newWishlist.join(','),
       },
     })
-    console.log(res)
+    // console.log(res)
     return res.productIds.split(',')
   } catch (error) {
     console.error(error)
@@ -60,6 +60,7 @@ export default async function handler(
   }
 
   try {
+    //@ts-ignore
     const wishlist = await updateWishlist(String(session.id), String(productId))
     res.status(200).json({ items: wishlist, message: 'Success' })
   } catch (error) {

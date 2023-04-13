@@ -8,7 +8,7 @@ import { GetServerSidePropsContext } from 'next'
 import { products } from '@prisma/client'
 import { format } from 'date-fns'
 import { CATEGORY_MAP } from '@/constants/products'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@mantine/core'
 import { IconHeart, IconHeartbeat } from '@tabler/icons-react'
 import { useSession } from 'next-auth/react'
@@ -36,6 +36,8 @@ export default function Products(props: {
   const { data: session } = useSession()
   const router = useRouter()
   const { id: productId } = router.query
+  const queryClient = useQueryClient()
+
   const [editorState] = useState<EditorState | undefined>(() =>
     props.product.contents
       ? EditorState.createWithContent(
@@ -51,13 +53,40 @@ export default function Products(props: {
   )
   console.log(wishlist)
 
-  const { mutate } = useMutation<unknown, unknown, string, any>((productId) =>
-    fetch('/api/update-wishlist', {
-      method: 'POST',
-      body: JSON.stringify({ productId }),
-    })
-      .then((res) => res.json())
-      .then((data) => data.items)
+  const { mutate } = useMutation<unknown, unknown, string, any>(
+    (productId) =>
+      fetch('/api/update-wishlist', {
+        method: 'POST',
+        body: JSON.stringify({ productId }),
+      })
+        .then((res) => res.json())
+        .then((data) => data.items),
+    {
+      onMutate: async (productId) => {
+        await queryClient.cancelQueries({ queryKey: [WISHLIST_QUERY_KEY] })
+
+        // Snapshot the previous value
+        const previous = queryClient.getQueryData([WISHLIST_QUERY_KEY])
+
+        // Optimistically update to the new value
+        queryClient.setQueryData<string[]>([WISHLIST_QUERY_KEY], (old) =>
+          old
+            ? old.includes(String(productId))
+              ? old.filter((id) => id !== String(productId))
+              : old.concat(String(productId))
+            : []
+        )
+
+        // Return a context object with the snapshotted value
+        return { previous }
+      },
+      onError: (error, _, context) => {
+        queryClient.setQueriesData([WISHLIST_QUERY_KEY], context.previos)
+      },
+      onSuccess: async () => {
+        queryClient.invalidateQueries([WISHLIST_QUERY_KEY])
+      },
+    }
   )
 
   const product = props.product
@@ -71,7 +100,6 @@ export default function Products(props: {
           <div style={{ maxWidth: 600, marginRight: 52 }}>
             <Carousel
               animation="fade"
-              autoplay
               withoutControls
               wrapAround
               speed={10}
@@ -100,11 +128,11 @@ export default function Products(props: {
             <div className="text-lg">
               {product.price.toLocaleString('ko-kr')}원
             </div>
-            <>{wishlist}</>
             <Button
+              disabled={wishlist == null}
               leftIcon={
                 isWished ? (
-                  <IconHeartbeat size={20} stroke={1.5} />
+                  <IconHeart size={20} stroke={1.5} />
                 ) : (
                   <IconHeart size={20} stroke={1.5} />
                 )

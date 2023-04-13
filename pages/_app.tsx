@@ -13,7 +13,6 @@ export default function App({
     },
   })
 
-  // https://next-auth.js.org/getting-started/example
   return (
     <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>
