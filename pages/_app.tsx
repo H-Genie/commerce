@@ -2,6 +2,7 @@ import type { AppProps } from 'next/app'
 import 'styles/globals.css'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { SessionProvider } from 'next-auth/react'
+import Header from '@/components/Header'
 
 export default function App({
   Component,
@@ -16,7 +17,10 @@ export default function App({
   return (
     <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>
-        <Component {...pageProps} />
+        <div className="px-36">
+          <Header />
+          <Component {...pageProps} />
+        </div>
       </QueryClientProvider>
     </SessionProvider>
   )

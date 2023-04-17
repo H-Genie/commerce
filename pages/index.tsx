@@ -1,92 +1,149 @@
-import { useRef, useEffect, useState } from 'react'
-import { NextPage } from 'next'
-import { css } from '@emotion/react'
-import Button from '@/components/Button'
+import { useState } from 'react'
+import { categories, products } from '@prisma/client'
+import Image from 'next/image'
+import { Pagination, Input } from '@mantine/core'
+import { TAKE, CATEGORY_MAP, FILTERS } from '@/constants/products'
+import { SegmentedControl, Select } from '@mantine/core'
+import { IconSearch } from '@tabler/icons-react'
+import useDebounce from '@/hooks/useDebounce'
+import { useQuery } from '@tanstack/react-query'
+import { useRouter } from 'next/router'
 
-const Home: NextPage = () => {
-  // const [products, setProduct] = useState<
-  //   { id: string; properties: { id: string }[] }[]
-  // >([])
-  const [products, setProduct] = useState<
-    { id: string; name: string; createdAt: string }[]
-  >([])
-  const inputRef: any = useRef<HTMLInputElement>(null)
+export default function Home() {
+  const router = useRouter()
+  const [activePage, setPage] = useState(1)
+  const [selectedCategory, setCategory] = useState<string>('-1')
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(
+    FILTERS[0].value
+  )
+  const [keyword, setKeyword] = useState('')
+  const debouncedKeyword = useDebounce<string>(keyword)
 
-  // useEffect(() => {
-  //   fetch('/api/get-items')
-  //     .then((res) => res.json())
-  //     .then((data) => setProduct(data.items))
-  // }, [])
-  // useEffect(() => {
-  //   fetch('/api/get-products')
-  //     .then((res) => res.json())
-  //     .then((data) => setProduct(data.items))
-  // }, [])
+  const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setKeyword(e.target.value)
 
-  const handleClick = () => {
-    if (inputRef.current === null || inputRef.current === '') {
-      alert('이름을 넣어주세요')
-      return
+  // Category
+  const { data: categories } = useQuery<
+    { items: categories[] },
+    unknown,
+    categories[]
+  >(
+    [`/api/get-categories`],
+    () => fetch(`/api/get-categories`).then((res) => res.json()),
+    {
+      select: (data) => data.items,
     }
-    fetch(`/api/add-item?name=${inputRef.current.value}`)
-      .then((res) => res.json())
-      .then((data) => alert(data.message))
-  }
+  )
+
+  // Counts
+  const { data: total } = useQuery(
+    [
+      `/api/get-products-count?category=${selectedCategory}&contains=${debouncedKeyword}`,
+    ],
+    () =>
+      fetch(
+        `/api/get-products-count?category=${selectedCategory}&contains=${debouncedKeyword}`
+      )
+        .then((res) => res.json())
+        .then((data) => Math.ceil(data.items / TAKE))
+  )
+
+  // Filtering
+  const { data: products } = useQuery<
+    { items: products[] },
+    unknown,
+    products[]
+  >(
+    [
+      `/api/get-products?skip=${
+        TAKE * (activePage - 1)
+      }&take=${TAKE}&category=${selectedCategory}&orderBy=${selectedFilter}&contains=${debouncedKeyword}`,
+    ],
+    () =>
+      fetch(
+        `/api/get-products?skip=${
+          TAKE * (activePage - 1)
+        }&take=${TAKE}&category=${selectedCategory}&orderBy=${selectedFilter}&contains=${debouncedKeyword}`
+      ).then((res) => res.json()),
+    {
+      select: (data) => data.items,
+    }
+  )
 
   return (
-    <>
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder="name"
-        className="placeholder:italic placeholder:text-pink-400 block bg-white w-96 border border-slate-300 rounded-md py-2 pl-3 pr-3 shadow-sm focus:outline-none focus:border-red-500 focus:ring-sky-500 focus:ring-1 sm:text-sm"
-      />
-      <button
-        css={css`
-          background-color: hotpink;
-          padding: 16px;
-          border-radius: 8px;
-        `}
-        onClick={handleClick}
-      >
-        Add Jacket
-      </button>
-      <Button onClick={handleClick}>Add Jacket</Button>
-
-      <div>
-        <p>Product List</p>
-        {products &&
-          products.map((item) => (
-            <div key={item.id}>
-              {item.name} <span>{item.createdAt}</span>
+    <div className="px-36 mt-36 mb-36">
+      <div className="mb-4">
+        <Input
+          icon={<IconSearch />}
+          placeholder="Search"
+          value={keyword}
+          onChange={changeHandler}
+        />
+      </div>
+      <div className="mb-4">
+        <Select
+          value={selectedFilter}
+          onChange={setSelectedFilter}
+          data={FILTERS}
+        />
+      </div>
+      {categories && (
+        <div className="mb-4">
+          <SegmentedControl
+            value={selectedCategory}
+            onChange={setCategory}
+            data={[
+              { label: 'ALL', value: '-1' },
+              ...categories.map((category) => ({
+                label: category.name,
+                value: String(category.id),
+              })),
+            ]}
+            color="dark"
+          />
+        </div>
+      )}
+      {products && (
+        <div className="grid grid-cols-3 gap-5">
+          {products.map((item) => (
+            <div
+              key={item.id}
+              style={{ maxWidth: 300 }}
+              onClick={() => router.push(`/products/${item.id}`)}
+            >
+              <Image
+                className="rounded"
+                src={item.image_url ?? ''}
+                alt={item.name}
+                width={300}
+                height={200}
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO0rAcAAPcAulGYQS0AAAAASUVORK5CYII="
+                style={{ objectFit: 'cover' }}
+              />
+              <div className="flex">
+                <span>{item.name}</span>
+                <span className="ml-auto">
+                  {item.price.toLocaleString('ko-KR')}원
+                </span>
+              </div>
+              <span className="text-zinc-400">
+                {CATEGORY_MAP[item.category_id - 1]}
+              </span>
             </div>
           ))}
-        {/* {products &&
-          products.map((item) => (
-            <div key={item.id}>
-              {JSON.stringify(item)}
-              <br />
-              <br />
-              {item.properties &&
-                Object.entries(item.properties).map(([key, value]) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      fetch(
-                        `/api/get-detail?pageId=${item.id}&propertyId=${value.id}`
-                      )
-                        .then((res) => res.json())
-                        .then((data) => alert(JSON.stringify(data.detail)))
-                    }}
-                  >
-                    {key}
-                  </button>
-                ))}
-            </div>
-          ))} */}
+        </div>
+      )}
+      <div className="w-full flex mt-5">
+        {total && (
+          <Pagination
+            value={activePage}
+            onChange={setPage}
+            total={total}
+            className="m-auto"
+          />
+        )}
       </div>
-    </>
+    </div>
   )
 }
-
-export default Home

@@ -2,7 +2,14 @@ import GoogleLogin from '@/components/GoogleLogin'
 
 const login = () => {
   return (
-    <div className="flex w-screen h-screen items-center justify-center">
+    <div
+      style={{
+        display: 'flex',
+        height: '70vh',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <GoogleLogin />
     </div>
   )
