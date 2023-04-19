@@ -5,7 +5,7 @@ import CustomEditor from '@/components/Editor'
 import { useRouter } from 'next/router'
 import { convertFromRaw, EditorState } from 'draft-js'
 import { GetServerSidePropsContext } from 'next'
-import { products } from '@prisma/client'
+import { Cart, products } from '@prisma/client'
 import { format } from 'date-fns'
 import { CATEGORY_MAP } from '@/constants/products'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -91,12 +91,30 @@ export default function Products(props: {
     }
   )
 
-  const validate = (type: 'cart' | 'order') => {
+  const { mutate: addCart } = useMutation<
+    unknown,
+    unknown,
+    Omit<Cart, 'id' | 'userId'>,
+    any
+  >((item) =>
+    fetch('/api/add-cart', {
+      method: 'POST',
+      body: JSON.stringify({ item }),
+    })
+      .then((res) => res.json())
+      .then((data) => data.items)
+  )
+
+  const validate = async (type: 'cart' | 'order') => {
     if (quantity === null) return alert('최소수량을 선택해주세요')
 
     alert('장바구니로 이동합니다')
 
-    // TODO: 장바구니에 등록하는 기능 추가
+    await addCart({
+      productId: product.id,
+      quantity,
+      amount: product.price * quantity,
+    })
 
     router.push('/cart')
   }

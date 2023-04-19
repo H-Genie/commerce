@@ -2,59 +2,65 @@ import { CountControl } from '@/components/CountControl'
 import { CATEGORY_MAP } from '@/constants/products'
 import styled from '@emotion/styled'
 import { Button } from '@mantine/core'
-import { products } from '@prisma/client'
+import { Cart, products } from '@prisma/client'
 import { IconRefresh, IconShoppingCart, IconX } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo } from 'react'
 
-interface CartItem {
+interface CartItem extends Cart {
   name: string
-  productId: number
   price: number
-  quantity: number
-  amount: number
   image_url: string
 }
 
-export default function Cart() {
+export default function CartPage() {
   const router = useRouter()
-  const [data, setData] = useState<CartItem[]>([])
+
+  const { data } = useQuery<{ items: CartItem[] }, unknown, CartItem[]>(
+    [`/api/get-cart`],
+    () =>
+      fetch(`/api/get-cart`)
+        .then((res) => res.json())
+        .then((data) => data.items)
+  )
+  console.log(data)
+
+  const deliveryAmount = data && data.length > 0 ? 5000 : 0
+  const discountAmont = 0
 
   const amount = useMemo(() => {
+    if (data == null) return 0
     return data
       .map((item) => item.amount)
       .reduce((prev, curr) => prev + curr, 0)
   }, [data])
 
-  const deliveryAmount = 5000
-  const discountAmont = 0
+  // useEffect(() => {
+  //   const mockData = [
+  //     {
+  //       name: '멋드러진 신발',
+  //       productId: 10,
+  //       price: 20000,
+  //       quantity: 2,
+  //       amount: 40000,
+  //       image_url:
+  //         'https://cdn.shopify.com/s/files/1/0192/8264/products/Screenshot-2023-03-01-141200_large.jpg?v=1677633882',
+  //     },
+  //     {
+  //       name: '느낌있는 후드',
+  //       productId: 43,
+  //       price: 102302,
+  //       quantity: 1,
+  //       amount: 102302,
+  //       image_url:
+  //         'https://cdn.shopify.com/s/files/1/0192/8264/products/Screenshot2022-07-14162927_large.jpg?v=1657846666',
+  //     },
+  //   ]
 
-  useEffect(() => {
-    const mockData = [
-      {
-        name: '멋드러진 신발',
-        productId: 10,
-        price: 20000,
-        quantity: 2,
-        amount: 40000,
-        image_url:
-          'https://cdn.shopify.com/s/files/1/0192/8264/products/Screenshot-2023-03-01-141200_large.jpg?v=1677633882',
-      },
-      {
-        name: '느낌있는 후드',
-        productId: 43,
-        price: 102302,
-        quantity: 1,
-        amount: 102302,
-        image_url:
-          'https://cdn.shopify.com/s/files/1/0192/8264/products/Screenshot2022-07-14162927_large.jpg?v=1657846666',
-      },
-    ]
-
-    setData(mockData)
-  }, [])
+  //   setData(mockData)
+  // }, [])
 
   const { data: products } = useQuery<
     { items: products[] },
@@ -75,10 +81,10 @@ export default function Cart() {
 
   return (
     <div>
-      <span className="text-2xl mb-3">Cart ({data.length})</span>
+      <span className="text-2xl mb-3">Cart ({data ? data.length : 0})</span>
       <div className="flex">
         <div className="flex flex-col p-4 space-y-4 flex-1">
-          {data?.length > 0 ? (
+          {data && data.length > 0 ? (
             data.map((item, index) => <Item key={index} {...item} />)
           ) : (
             <div>장바구니가 비어있습니다</div>
