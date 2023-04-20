@@ -4,7 +4,7 @@ import styled from '@emotion/styled'
 import { Button } from '@mantine/core'
 import { Cart, products } from '@prisma/client'
 import { IconRefresh, IconShoppingCart, IconX } from '@tabler/icons-react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo } from 'react'
@@ -15,17 +15,18 @@ interface CartItem extends Cart {
   image_url: string
 }
 
+export const CART_QUERY_KEY = '/api/get-cart'
+
 export default function CartPage() {
   const router = useRouter()
 
   const { data } = useQuery<{ items: CartItem[] }, unknown, CartItem[]>(
-    [`/api/get-cart`],
+    [CART_QUERY_KEY],
     () =>
-      fetch(`/api/get-cart`)
+      fetch(CART_QUERY_KEY)
         .then((res) => res.json())
         .then((data) => data.items)
   )
-  console.log(data)
 
   const deliveryAmount = data && data.length > 0 ? 5000 : 0
   const discountAmont = 0
@@ -36,31 +37,6 @@ export default function CartPage() {
       .map((item) => item.amount)
       .reduce((prev, curr) => prev + curr, 0)
   }, [data])
-
-  // useEffect(() => {
-  //   const mockData = [
-  //     {
-  //       name: '멋드러진 신발',
-  //       productId: 10,
-  //       price: 20000,
-  //       quantity: 2,
-  //       amount: 40000,
-  //       image_url:
-  //         'https://cdn.shopify.com/s/files/1/0192/8264/products/Screenshot-2023-03-01-141200_large.jpg?v=1677633882',
-  //     },
-  //     {
-  //       name: '느낌있는 후드',
-  //       productId: 43,
-  //       price: 102302,
-  //       quantity: 1,
-  //       amount: 102302,
-  //       image_url:
-  //         'https://cdn.shopify.com/s/files/1/0192/8264/products/Screenshot2022-07-14162927_large.jpg?v=1657846666',
-  //     },
-  //   ]
-
-  //   setData(mockData)
-  // }, [])
 
   const { data: products } = useQuery<
     { items: products[] },
@@ -84,10 +60,14 @@ export default function CartPage() {
       <span className="text-2xl mb-3">Cart ({data ? data.length : 0})</span>
       <div className="flex">
         <div className="flex flex-col p-4 space-y-4 flex-1">
-          {data && data.length > 0 ? (
-            data.map((item, index) => <Item key={index} {...item} />)
+          {data ? (
+            data.length > 0 ? (
+              data.map((item, index) => <Item key={index} {...item} />)
+            ) : (
+              <div>장바구니가 비어있습니다</div>
+            )
           ) : (
-            <div>장바구니가 비어있습니다</div>
+            <div>불러오는 중...</div>
           )}
         </div>
         <div className="px-4">
@@ -173,6 +153,7 @@ export default function CartPage() {
 
 const Item = (props: CartItem) => {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [quantity, setQuantity] = useState<number | undefined>(props.quantity)
   const [amount, setAmount] = useState<number>(props.quantity)
 
@@ -182,14 +163,78 @@ const Item = (props: CartItem) => {
     }
   }, [quantity, props.price])
 
-  const handleDelete = () => {
-    // TODO: 장바구니에서 삭제 기능 구현
+  const { mutate: updateCart } = useMutation<unknown, unknown, Cart, any>(
+    (item) =>
+      fetch('/api/update-cart', {
+        method: 'POST',
+        body: JSON.stringify({ item }),
+      })
+        .then((res) => res.json())
+        .then((data) => data.items),
+    {
+      onMutate: async (item) => {
+        await queryClient.cancelQueries({ queryKey: [CART_QUERY_KEY] })
+
+        // Snapshot the previous value
+        const previous = queryClient.getQueryData([CART_QUERY_KEY])
+
+        // Optimistically update to the new value
+        queryClient.setQueryData<Cart[]>([CART_QUERY_KEY], (old) =>
+          old?.filter((c) => c.id !== item.id).concat(item)
+        )
+
+        // Return a context object with the snapshotted value
+        return { previous }
+      },
+      onError: (error, _, context) => {
+        queryClient.setQueriesData([CART_QUERY_KEY], context.previos)
+      },
+      onSuccess: async () => {
+        queryClient.invalidateQueries([CART_QUERY_KEY])
+      },
+    }
+  )
+
+  const { mutate: deleteCart } = useMutation<unknown, unknown, number, any>(
+    (id) =>
+      fetch('/api/delete-cart', {
+        method: 'POST',
+        body: JSON.stringify({ id }),
+      })
+        .then((res) => res.json())
+        .then((data) => data.items),
+    {
+      onMutate: async (id) => {
+        await queryClient.cancelQueries({ queryKey: [CART_QUERY_KEY] })
+
+        // Snapshot the previous value
+        const previous = queryClient.getQueryData([CART_QUERY_KEY])
+
+        // Optimistically update to the new value
+        queryClient.setQueryData<Cart[]>([CART_QUERY_KEY], (old) =>
+          old?.filter((c) => c.id !== id)
+        )
+
+        // Return a context object with the snapshotted value
+        return { previous }
+      },
+      onError: (error, _, context) => {
+        queryClient.setQueriesData([CART_QUERY_KEY], context.previos)
+      },
+      onSuccess: async () => {
+        queryClient.invalidateQueries([CART_QUERY_KEY])
+      },
+    }
+  )
+
+  const handleDelete = async () => {
+    await deleteCart(props.id)
     alert(`장바구니에서 ${props.name} 삭제`)
   }
 
-  const updateDelete = () => {
-    // TODO: 장바구니에서 수정 기능 구현
-    alert(`장바구니에서 ${props.name} 수정`)
+  const handleUpdate = () => {
+    if (quantity == null) return alert('최소 수량을 선택해주세요')
+    updateCart({ ...props, quantity, amount: props.price * quantity })
   }
 
   return (
@@ -208,7 +253,7 @@ const Item = (props: CartItem) => {
         </span>
         <div className="flex items-center space-x-4">
           <CountControl value={quantity} setValue={setQuantity} />
-          <IconRefresh onClick={updateDelete} />
+          <IconRefresh onClick={handleUpdate} />
         </div>
       </div>
       <div className="flex ml-auto space-x-4">

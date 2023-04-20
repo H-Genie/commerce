@@ -13,6 +13,7 @@ import { Button } from '@mantine/core'
 import { IconHeart, IconHeartbeat, IconShoppingCart } from '@tabler/icons-react'
 import { useSession } from 'next-auth/react'
 import { CountControl } from '@/components/CountControl'
+import { CART_QUERY_KEY } from '@/pages/cart'
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const product = await fetch(
@@ -96,27 +97,36 @@ export default function Products(props: {
     unknown,
     Omit<Cart, 'id' | 'userId'>,
     any
-  >((item) =>
-    fetch('/api/add-cart', {
-      method: 'POST',
-      body: JSON.stringify({ item }),
-    })
-      .then((res) => res.json())
-      .then((data) => data.items)
+  >(
+    (item) =>
+      fetch('/api/add-cart', {
+        method: 'POST',
+        body: JSON.stringify({ item }),
+      })
+        .then((res) => res.json())
+        .then((data) => data.items),
+    {
+      onMutate: () => {
+        queryClient.invalidateQueries([CART_QUERY_KEY])
+      },
+      onSuccess: async () => {
+        router.push('/cart')
+      },
+    }
   )
 
-  const validate = async (type: 'cart' | 'order') => {
+  const validate = (type: 'cart' | 'order') => {
     if (quantity === null) return alert('최소수량을 선택해주세요')
 
     alert('장바구니로 이동합니다')
 
-    await addCart({
-      productId: product.id,
-      quantity,
-      amount: product.price * quantity,
-    })
-
-    router.push('/cart')
+    if (type === 'cart') {
+      addCart({
+        productId: product.id,
+        quantity,
+        amount: product.price * quantity,
+      })
+    }
   }
 
   const product = props.product
