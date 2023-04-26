@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { EditorState, convertFromRaw, convertToRaw } from 'draft-js'
 import CustomEditor from '@/components/Editor'
+import { Slider } from '@mantine/core'
 
 export default function CommentEdit() {
   const router = useRouter()
@@ -35,7 +36,7 @@ export default function CommentEdit() {
       fetch(`/api/update-comment`, {
         method: 'post',
         body: JSON.stringify({
-          orderItemId,
+          orderItemId: Number(orderItemId),
           rate,
           contents: JSON.stringify(
             convertToRaw(editorState.getCurrentContent())
@@ -44,7 +45,10 @@ export default function CommentEdit() {
         }),
       })
         .then((res) => res.json())
-        .then(() => alert('Success'))
+        .then(() => {
+          alert('Success')
+          router.back()
+        })
     }
   }
 
@@ -57,6 +61,21 @@ export default function CommentEdit() {
           onSave={handleSave}
         />
       )}
+      <Slider
+        defaultValue={5}
+        min={1}
+        max={5}
+        step={1}
+        value={rate}
+        onChange={setRate}
+        marks={[
+          { value: 1 },
+          { value: 2 },
+          { value: 3 },
+          { value: 4 },
+          { value: 5 },
+        ]}
+      />
     </div>
   )
 }

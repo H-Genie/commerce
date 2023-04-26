@@ -5,7 +5,7 @@ import CustomEditor from '@/components/Editor'
 import { useRouter } from 'next/router'
 import { convertFromRaw, EditorState } from 'draft-js'
 import { GetServerSidePropsContext } from 'next'
-import { Cart, OrderItem, products } from '@prisma/client'
+import { Cart, Comment, OrderItem, products } from '@prisma/client'
 import { format } from 'date-fns'
 import { CATEGORY_MAP } from '@/constants/products'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -15,6 +15,7 @@ import { useSession } from 'next-auth/react'
 import { CountControl } from '@/components/CountControl'
 import { CART_QUERY_KEY } from '@/pages/cart'
 import { ORDER_QUERY_KEY } from '@/pages/my'
+import CommentItem from '@/components/CommentItem'
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const product = await fetch(
@@ -23,17 +24,27 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
     .then((res) => res.json())
     .then((data) => data.items)
 
+  const comments = await fetch(
+    `http://localhost:3000/api/get-comments?productId=${ctx.params?.id}`
+  )
+    .then((res) => res.json())
+    .then((data) => data.items)
+
   return {
     props: {
       product: { ...product, images: [product.image_url, product.image_url] },
+      comments,
     },
   }
 }
 
 const WISHLIST_QUERY_KEY = '/api/get-wishlist'
 
+export interface CommentItemType extends Comment, OrderItem {}
+
 export default function Products(props: {
   product: products & { images: string[] }
+  comments: CommentItemType[]
 }) {
   const [index, setIndex] = useState(0)
   const { data: session } = useSession()
@@ -55,7 +66,6 @@ export default function Products(props: {
       .then((res) => res.json())
       .then((data) => data.items)
   )
-  console.log(wishlist)
 
   const { mutate } = useMutation<unknown, unknown, string, any>(
     (productId) =>
@@ -192,6 +202,13 @@ export default function Products(props: {
             {editorState !== undefined && (
               <CustomEditor editorState={editorState} readOnly />
             )}
+            <div>
+              <p className="text-2xl font-semibold">후기</p>
+              {props.comments &&
+                props.comments.map((comment, index) => (
+                  <CommentItem key={index} item={comment} />
+                ))}
+            </div>
           </div>
           <div style={{ maxWidth: 600 }} className="flex flex-col space-y-6">
             <div className="text-lg text-zinc-400">

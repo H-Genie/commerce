@@ -16,14 +16,16 @@ export default function CustomEditor({
   readOnly = false,
   onSave,
   onEditorStateChange,
+  noPadding = false,
 }: {
   editorState: EditorState
   readOnly?: boolean
+  noPadding?: boolean
   onSave?: () => void
   onEditorStateChange?: Dispatch<SetStateAction<EditorState | undefined>>
 }) {
   return (
-    <Wrapper readOnly={readOnly}>
+    <Wrapper readOnly={readOnly} noPadding={noPadding}>
       <Editor
         readOnly={readOnly}
         editorState={editorState}
@@ -44,8 +46,8 @@ export default function CustomEditor({
   )
 }
 
-const Wrapper = styled.div<{ readonly: boolean }>`
-  padding: 16px;
+const Wrapper = styled.div<{ readonly: boolean; noPadding: boolean }>`
+  ${(props) => (props.noPadding ? '' : 'padding: 16px;')}
   ${(props) =>
-    props.readOnly ? '' : 'border: 1px solid black; border-raidus : 8px;'}
+    props.readOnly ? '' : 'border: 1px solid black; border-radius : 8px;'}
 `
