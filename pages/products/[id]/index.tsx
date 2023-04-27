@@ -51,7 +51,7 @@ export default function Products(props: {
   const router = useRouter()
   const { id: productId } = router.query
   const queryClient = useQueryClient()
-  const [quantity, setQuantity] = useState<number | undefined>(1)
+  const [quantity, setQuantity] = useState<number | undefined | any>(1)
 
   const [editorState] = useState<EditorState | undefined>(() =>
     props.product.contents

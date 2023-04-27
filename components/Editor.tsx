@@ -46,7 +46,7 @@ export default function CustomEditor({
   )
 }
 
-const Wrapper = styled.div<{ readonly: boolean; noPadding: boolean }>`
+const Wrapper = styled.div<{ readOnly: boolean; noPadding: boolean }>`
   ${(props) => (props.noPadding ? '' : 'padding: 16px;')}
   ${(props) =>
     props.readOnly ? '' : 'border: 1px solid black; border-radius : 8px;'}

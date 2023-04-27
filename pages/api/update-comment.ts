@@ -61,8 +61,8 @@ export default async function handler(
   }
 
   try {
-    //@ts-ignore
     const wishlist = await updateComment({
+      //@ts-ignore
       userId: String(session.id),
       orderItemId: orderItemId,
       rate,

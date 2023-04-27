@@ -25,7 +25,7 @@ export default function Header() {
         />
         {session ? (
           <Image
-            src={session.user?.image}
+            src={session.user?.image!}
             width={30}
             height={30}
             style={{ borderRadius: '50%' }}

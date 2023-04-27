@@ -52,7 +52,7 @@ const useStyles = createStyles((theme) => ({
 
 interface QuantityInputProps {
   value: number | undefined
-  setValue: Dispatch<SetStateAction<number | undefined>>
+  setValue: Dispatch<SetStateAction<number | undefined | any>>
   min?: number
   max?: number
 }
