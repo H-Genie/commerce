@@ -4,6 +4,7 @@ import { IconStar } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import CustomEditor from './Editor'
 import { EditorState, convertFromRaw } from 'draft-js'
+import AutoSizeImage from './AutoSizeImage'
 
 export default function CommentItem({ item }: { item: CommentItemType }) {
   return (
@@ -36,6 +37,11 @@ export default function CommentItem({ item }: { item: CommentItemType }) {
           readOnly
           noPadding
         />
+      </div>
+      <div style={{ display: 'flex' }}>
+        {item.images?.split(',').map((image, index) => (
+          <AutoSizeImage key={index} src={image} size={150} />
+        ))}
       </div>
     </Wrapper>
   )
