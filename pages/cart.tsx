@@ -221,7 +221,7 @@ const Item = (props: CartItem) => {
         // Return a context object with the snapshotted value
         return { previous }
       },
-      onError: (error, _, context) => {
+      onError: (_, __, context) => {
         queryClient.setQueriesData([CART_QUERY_KEY], context.previos)
       },
       onSuccess: async () => {
@@ -253,7 +253,7 @@ const Item = (props: CartItem) => {
         // Return a context object with the snapshotted value
         return { previous }
       },
-      onError: (error, _, context) => {
+      onError: (_, __, context) => {
         queryClient.setQueriesData([CART_QUERY_KEY], context.previos)
       },
       onSuccess: async () => {

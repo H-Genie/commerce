@@ -1,5 +1,4 @@
 import { CountControl } from '@/components/CountControl'
-import styled from '@emotion/styled'
 import { Badge, Button } from '@mantine/core'
 import { Cart, OrderItem, Orders } from '@prisma/client'
 import { IconX } from '@tabler/icons-react'
@@ -99,7 +98,7 @@ const DetailItem = (props: OrderDetail) => {
         // Return a context object with the snapshotted value
         return { previous }
       },
-      onError: (error, _, context) => {
+      onError: (_, __, context) => {
         queryClient.setQueriesData([ORDER_QUERY_KEY], context.previos)
       },
       onSuccess: async () => {

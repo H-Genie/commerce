@@ -10,12 +10,13 @@ import { format } from 'date-fns'
 import { CATEGORY_MAP } from '@/constants/products'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@mantine/core'
-import { IconHeart, IconHeartbeat, IconShoppingCart } from '@tabler/icons-react'
+import { IconHeart, IconShoppingCart } from '@tabler/icons-react'
 import { useSession } from 'next-auth/react'
 import { CountControl } from '@/components/CountControl'
 import { CART_QUERY_KEY } from '@/pages/cart'
 import { ORDER_QUERY_KEY } from '@/pages/my'
 import CommentItem from '@/components/CommentItem'
+import Head from 'next/head'
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const product = await fetch(
@@ -94,7 +95,7 @@ export default function Products(props: {
         // Return a context object with the snapshotted value
         return { previous }
       },
-      onError: (error, _, context) => {
+      onError: (_, __, context) => {
         queryClient.setQueriesData([WISHLIST_QUERY_KEY], context.previos)
       },
       onSuccess: async () => {
@@ -180,6 +181,10 @@ export default function Products(props: {
     <>
       {product !== null && productId !== null ? (
         <div className="flex flex-row">
+          <Head>
+            <title>{product.name}</title>
+            <meta name="description" content="Commerce service" />
+          </Head>
           <div style={{ maxWidth: 600, marginRight: 52 }}>
             <Carousel
               animation="fade"
