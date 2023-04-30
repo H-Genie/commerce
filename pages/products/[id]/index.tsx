@@ -19,13 +19,13 @@ import CommentItem from '@/components/CommentItem'
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const product = await fetch(
-    `http://localhost:3000/api/get-product?id=${ctx.params?.id}`
+    `${process.env.NEXTAUTH_URL}/api/get-product?id=${ctx.params?.id}`
   )
     .then((res) => res.json())
     .then((data) => data.items)
 
   const comments = await fetch(
-    `http://localhost:3000/api/get-comments?productId=${ctx.params?.id}`
+    `${process.env.NEXTAUTH_URL}/api/get-comments?productId=${ctx.params?.id}`
   )
     .then((res) => res.json())
     .then((data) => data.items)
